@@ -60,6 +60,8 @@ def utiliza_first_come_first_served(numero_de_quadros, paginas_processo):
 
     return fila, page_faults, page_hits
 
+# -- Algoritmo SC --
+
 
 def utiliza_segunda_chance(numero_de_quadros, paginas_processo):
     fila = []
