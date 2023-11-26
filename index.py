@@ -1,7 +1,7 @@
 import random
 # -- Ler o arquivo --
 
-doc = open('./arquivos/nru.txt', 'r', encoding='utf8')
+doc = open('./arquivos/sc.txt', 'r', encoding='utf8')
 algoritmo_substituicao = doc.readline().strip()
 
 # -- Dados do processo --
@@ -25,7 +25,7 @@ def identifica_algoritmo_substituicao(nome_substiuicao, numero_de_quadros, pagin
             utiliza_first_come_first_served(
                 numero_de_quadros, paginas_processo)
         elif posicao == 2 or posicao == 3:
-            utiliza_segunda_chance(numero_de_quadros, paginas_processo)
+            utiliza_second_chance(numero_de_quadros, paginas_processo)
         elif posicao == 4 or posicao == 5:
             utiliza_not_recently_used(numero_de_quadros, paginas_processo)
     else:
@@ -39,7 +39,7 @@ def utiliza_first_come_first_served(numero_de_quadros, paginas_processo):
     page_faults = 0
     page_hits = 0
 
-    print(paginas_processo)
+    print('Páginas do processo:', paginas_processo, '\n')
 
     for operacao in paginas_processo:
         pagina = (eval(operacao[0]))
@@ -68,47 +68,51 @@ def utiliza_first_come_first_served(numero_de_quadros, paginas_processo):
 # -- Algoritmo SC --
 
 
-def utiliza_segunda_chance(numero_de_quadros, paginas_processo):
+def utiliza_second_chance(numero_de_quadros, paginas_processo):
     fila = []
+    bit_referencia = {}
     page_faults = 0
     page_hits = 0
 
-    print(paginas_processo)
+    print('\nPáginas do processo:', paginas_processo, '\n')
 
-    for operacao in paginas_processo:
-        # -- inicializa todas as páginas com bit 0 --
-        pagina = [(eval(operacao[0])), 0]
+    for pagina in paginas_processo:
+        numero_pagina = int(pagina[0])
 
-        # -- verifica se a página não está na fila e da um page fault --
-        if pagina not in fila:
+        # Verifica se a página não está na fila (page fault)
+        if numero_pagina not in fila:
             page_faults += 1
-            print('page fault - página', pagina)
+            print('page fault - página', [numero_pagina, 0])
 
-            # -- verifica se há espaço na fila e adiciona a nova página --
+            # Verifica se há espaço na fila e adiciona a nova página
             if len(fila) < numero_de_quadros:
-                fila.append(pagina)
+                fila.append(numero_pagina)
+                bit_referencia[numero_pagina] = 0
             else:
-                # -- lógica da segunda chance --
-                while (fila[0][1] != 0):
-                    fila[0][1] = 0
+                # Lógica da segunda chance
+                while bit_referencia[fila[0]] != 0:
+                    bit_referencia[fila[0]] = 0
                     segunda_chance = fila.pop(0)
                     fila.append(segunda_chance)
+                    print('segunda chance: ', [
+                          segunda_chance, bit_referencia[segunda_chance]])
 
-            # -- remove a página mais antiga e adiciona a nova no final da fila --
-                fila.pop(0)
-                fila.append(pagina)
+                # Remove a página mais antiga e adiciona a nova
+                removida = fila.pop(0)
+                print('removida: ', [removida, bit_referencia[removida]])
+                bit_referencia.pop(removida)
+                fila.append(numero_pagina)
+                bit_referencia[numero_pagina] = 0
 
-         # -- se a página já está na fila da um page hit --
+        # Se a página já está na fila (page hit)
         else:
-            for p in fila:
-                if p[0] == pagina[0]:
-                    p[1] = 1  # Atualiza o bit de referência da página na fila
-                    page_hits += 1
-                    print('page hit - página', p)
-                    break
+            bit_referencia[numero_pagina] = 1
+            page_hits += 1
+            print('page hit - página',
+                  [numero_pagina, bit_referencia[numero_pagina]])
 
-    print('\nTotal Page Faults: ', page_faults)
-    print('Total Page Hits: ', page_hits)
+    print('\nTotal Page Faults:', page_faults)
+    print('Total Page Hits:', page_hits, '\n')
 
     return fila, page_faults, page_hits
 
@@ -126,14 +130,14 @@ def utiliza_not_recently_used(numero_quadros, paginas_processo):
 
     for operacao in paginas_processo:
         numero_pagina = int(operacao[0])
-        classe_pagina = classe0  
+        classe_pagina = classe0
 
         pagina = [numero_pagina, classe_pagina]
 
         if any(pagina[0] == p[0] for p in memoria):
             print(f"\nPage Hit - Página {pagina[0]} - Operação {operacao[1]}")
             page_hits += 1
-           
+
             memoria = [p for p in memoria if not (pagina[0] == p[0])]
 
             if pagina[1] == classe0 and operacao[1] == "r":
@@ -169,7 +173,8 @@ def utiliza_not_recently_used(numero_quadros, paginas_processo):
                 elif len(paginas_classe3) > 0:
                     pagina_substituir = random.choice(paginas_classe3)
 
-                print(f"Substituindo página {pagina_substituir[0]} pela página {pagina[0]}")
+                print(
+                    f"Substituindo página {pagina_substituir[0]} pela página {pagina[0]}")
                 memoria.remove(pagina_substituir)
                 memoria.append(pagina)
 
@@ -177,7 +182,6 @@ def utiliza_not_recently_used(numero_quadros, paginas_processo):
 
     print('\nTotal Page Faults: ', page_faults)
     print('Total Page Hits: ', page_hits)
-
 
 
 identifica_algoritmo_substituicao(
