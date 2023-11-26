@@ -1,6 +1,7 @@
+import random
 # -- Ler o arquivo --
 
-doc = open('./arquivos/sc.txt', 'r', encoding='utf8')
+doc = open('./arquivos/nru.txt', 'r', encoding='utf8')
 algoritmo_substituicao = doc.readline().strip()
 
 # -- Dados do processo --
@@ -15,7 +16,7 @@ paginas_processo = [linha.replace('\u00a0', '').strip().split()
 
 def identifica_algoritmo_substituicao(nome_substiuicao, numero_de_quadros, paginas_processo):
     algoritmos = ['FIRST COME FIRST SERVED', 'FIFO',
-                  'SC', 'Segunda Chance', '']
+                  'SC', 'SEGUNDA CHANCE', 'NOT RECENTLY USED', 'NRU']
 
     if nome_substiuicao in algoritmos:
         posicao = algoritmos.index(nome_substiuicao)
@@ -25,8 +26,8 @@ def identifica_algoritmo_substituicao(nome_substiuicao, numero_de_quadros, pagin
                 numero_de_quadros, paginas_processo)
         elif posicao == 2 or posicao == 3:
             utiliza_segunda_chance(numero_de_quadros, paginas_processo)
-        elif posicao == 4:
-            ...
+        elif posicao == 4 or posicao == 5:
+            utiliza_not_recently_used(numero_de_quadros, paginas_processo)
     else:
         print('Não foi possível identificar o algoritmo de substituição! :(')
 
@@ -112,5 +113,72 @@ def utiliza_segunda_chance(numero_de_quadros, paginas_processo):
     return fila, page_faults, page_hits
 
 
+def utiliza_not_recently_used(numero_quadros, paginas_processo):
+    memoria = []
+    page_faults = 0
+    page_hits = 0
+
+    # classes de prioridade - referenciada/modificada
+    classe0 = [0, 0]
+    classe1 = [0, 1]
+    classe2 = [1, 0]
+    classe3 = [1, 1]
+
+    for operacao in paginas_processo:
+        numero_pagina = int(operacao[0])
+        classe_pagina = classe0  
+
+        pagina = [numero_pagina, classe_pagina]
+
+        if any(pagina[0] == p[0] for p in memoria):
+            print(f"\nPage Hit - Página {pagina[0]} - Operação {operacao[1]}")
+            page_hits += 1
+           
+            memoria = [p for p in memoria if not (pagina[0] == p[0])]
+
+            if pagina[1] == classe0 and operacao[1] == "r":
+                memoria.append([numero_pagina, classe2])
+            elif pagina[1] == classe0 and operacao[1] == "w":
+                memoria.append([numero_pagina, classe1])
+            elif pagina[1] == classe1 and operacao[1] == "r":
+                memoria.append([numero_pagina, classe3])
+            elif pagina[1] == classe2 and operacao[1] == "w":
+                memoria.append([numero_pagina, classe3])
+
+            print(f"Memória = {memoria}")
+        else:
+            print(f"\nPage Fault - Página {pagina[0]}")
+            page_faults += 1
+
+            if len(memoria) < numero_quadros:
+                memoria.append(pagina)
+                print(f"Memória {memoria}")
+            else:
+                # páginas por classe
+                paginas_classe0 = [p for p in memoria if p[1] == classe0]
+                paginas_classe1 = [p for p in memoria if p[1] == classe1]
+                paginas_classe2 = [p for p in memoria if p[1] == classe2]
+                paginas_classe3 = [p for p in memoria if p[1] == classe3]
+
+                if len(paginas_classe0) > 0:
+                    pagina_substituir = random.choice(paginas_classe0)
+                elif len(paginas_classe1) > 0:
+                    pagina_substituir = random.choice(paginas_classe1)
+                elif len(paginas_classe2) > 0:
+                    pagina_substituir = random.choice(paginas_classe2)
+                elif len(paginas_classe3) > 0:
+                    pagina_substituir = random.choice(paginas_classe3)
+
+                print(f"Substituindo página {pagina_substituir[0]} pela página {pagina[0]}")
+                memoria.remove(pagina_substituir)
+                memoria.append(pagina)
+
+                print(f"Memória = {memoria}")
+
+    print('\nTotal Page Faults: ', page_faults)
+    print('Total Page Hits: ', page_hits)
+
+
+
 identifica_algoritmo_substituicao(
-    algoritmo_substituicao, numero_de_quadros, paginas_processo)
+    algoritmo_substituicao.upper(), numero_de_quadros, paginas_processo)
